@@ -7,7 +7,7 @@
   "extensions": ["ms-python.python"],
   "forwardPorts": [8080],
   "runArgs": ["--network", "bridge"],
-  "workspaceFolder": "/usr/src/app",
+  "workspaceFolder": "/",
   "shutdownAction": "stopContainer", // This might be needed for DevPod
   "postCreateCommand": "if [ ! -f .devcontainer/already_initialized.flag ]; then bash .devcontainer/initialize.sh && touch .devcontainer/already_initialized.flag; fi" // Run only once, on initial build
 }
