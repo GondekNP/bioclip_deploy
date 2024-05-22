@@ -6,12 +6,7 @@
   },
   "extensions": ["ms-python.python"],
   "forwardPorts": [8080],
-  "runArgs": [
-    "--network",
-    "bridge",
-    "--env-file", // Prod deployment provides a .env in the root, but we need to provide our own since .env will not be in the root within the dev container
-    ".devcontainer/devcontainer.env"
-  ],
+  "runArgs": ["--network", "bridge"],
   "workspaceFolder": "/usr/src/app",
   "shutdownAction": "stopContainer", // This might be needed for DevPod
   "postCreateCommand": "if [ ! -f .devcontainer/already_initialized.flag ]; then bash .devcontainer/initialize.sh && touch .devcontainer/already_initialized.flag; fi" // Run only once, on initial build
