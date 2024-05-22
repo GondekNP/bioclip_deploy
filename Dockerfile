@@ -20,4 +20,4 @@ EXPOSE 8080
 RUN python -m src.get_bioclip
 
 # Step 7: Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
