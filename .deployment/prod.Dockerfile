@@ -16,5 +16,8 @@ COPY . .
 # Step 6: Expose port, e.g., 8080
 EXPOSE 8080
 
+# Step 7: Download bioclip dependencies
+RUN python -m src.get_bioclip
+
 # Step 7: Command to run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
