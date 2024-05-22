@@ -1,16 +1,11 @@
 {
   "name": "BioCLIP Dev Container",
-  "customizations": {
-    "devpod": {
-      "prebuildRepository": "ghcr.io/GondekNP/bioclip_deploy"
-    }
-  },
   "dockerFile": "../Dockerfile",
   "settings": {
     "terminal.integrated.shell.linux": "/bin/bash"
   },
   "extensions": ["ms-python.python"],
-  "forwardPorts": [4200],
+  "forwardPorts": [8080],
   "runArgs": [
     "--network",
     "bridge",
