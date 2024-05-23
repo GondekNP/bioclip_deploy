@@ -48,11 +48,8 @@ def format_name(taxon, common):
 def healthz():
     return "Healthy"
 
-class RemoteImage(BaseModel):
-    url: str
-
 @app.get("/classify_image")
-def classify_image(remote_image: RemoteImage):
+def classify_image(remote_image: str):
 
     tmp_id = str(uuid.uuid4())
 
