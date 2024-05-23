@@ -5,6 +5,5 @@ fastapi
 uvicorn
 requests
 open_clip_torch
-heapq
 collections
 pydantic
