@@ -9,6 +9,12 @@ import torch.nn.functional as F
 from collections import OrderedDict
 import fastapi
 from pydantic import BaseModel
+from fastapi import FastAPI, Request, HTTPException, Depends
+from starlette.status import HTTP_401_UNAUTHORIZED
+from typing import Optional
+
+import os
+BIOBLEND_API_KEY = os.getenv("BIOBLEND_API_KEY") 
 
 app = fastapi.FastAPI()
 
@@ -48,8 +54,21 @@ def format_name(taxon, common):
 def healthz():
     return "Healthy"
 
+def validate_api_key(api_key: Optional[str] = None):
+    if api_key is None:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="API Key is missing",
+        )
+    elif api_key!= BIOBLEND_API_KEY:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Invalid API Key",
+        )
+    return api_key
+
 @app.get("/classify_image")
-def classify_image(remote_image: str):
+def classify_image(remote_image: str, __api_key: Optional[str] = Depends(validate_api_key)):
 
     tmp_id = str(uuid.uuid4())
 
