@@ -3,7 +3,6 @@ torchvision
 pillow
 fastapi
 uvicorn
-requests
 open_clip_torch
-collections
 pydantic
+requests
