@@ -1,60 +1,81 @@
+import open_clip
+import uuid, urllib
+import PIL
 import torch
+import numpy as np
+import json
 from torchvision import transforms
-from PIL import Image
-import requests
-from io import BytesIO
-from fastapi import FastAPI, HTTPException
-import uvicorn
+import torch.nn.functional as F
+import collections
+from collections import OrderedDict
+import heapq
+import fastapi
+from pydantic import BaseModel
 
-app = FastAPI()
+app = fastapi.FastAPI()
 
-# Load model
-model = ...
-model.load_state_dict(torch.load("model.pth"))
-model.eval()
+min_prob = 1e-9
 
-# Define image transformations
+model, preprocess_train, preprocess_val = open_clip.create_model_and_transforms('hf-hub:imageomics/bioclip')
+tokenizer = open_clip.get_tokenizer('hf-hub:imageomics/bioclip')
+txt_emb_npy = "./data/txt_emb_species.npy"
+txt_names_json = "./data/txt_emb_species.json"
+txt_emb = torch.from_numpy(np.load(txt_emb_npy, mmap_mode="r"))
+with open(txt_names_json) as fd:
+    txt_names = json.load(fd)
 
-transform = transforms.Compose(
+preprocess_img = transforms.Compose(
     [
-        transforms.Resize((224, 224)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        transforms.Resize((224, 224), antialias=True),
+        transforms.Normalize(
+            mean=(0.48145466, 0.4578275, 0.40821073),
+            std=(0.26862954, 0.26130258, 0.27577711),
+        ),
     ]
 )
 
+ranks = ("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
 
-def fetch_image(url: str) -> Image.Image:
+k = 5
+rank = 6
 
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return Image.open(BytesIO(response.content))
+def format_name(taxon, common):
+    taxon = " ".join(taxon)
+    if not common:
+        return taxon
+    return f"{taxon} ({common})"
 
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=400, detail=str(e))
+@app.get("/")
+def healthz():
+    return "Healthy"
 
+class RemoteImage(BaseModel):
+    url: str
 
-def classify_image(image: Image.Image) -> dict:
+@app.get("/classify_image")
+def classify_image(remote_image: RemoteImage):
 
-    image = transform(image)
-    image = image.unsqueeze(0)
+    tmp_id = str(uuid.uuid4())
 
-    with torch.no_grad():
-        output = model(image)
+    f = f"/tmp/{tmp_id}.jpg"
+    urllib.request.urlretrieve(
+        remote_image,
+        f
+    )
+    img = PIL.Image.open(f)
 
-    # Assuming some post-processing
-    return {"classifications": output.argmax(dim=1).item()}
+    img = preprocess_val(img)
+    img_features = model.encode_image(img.unsqueeze(0))
+    img_features = F.normalize(img_features, dim=-1)
+    logits = (model.logit_scale.exp() * img_features @ txt_emb).squeeze()
+    probs = F.softmax(logits, dim=0)
 
-
-@app.post("/classify")
-def classify(url: str):
-
-    image = fetch_image(url)
-    classifications = classify_image(image)
-
-    return classifications
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    # If predicting species, no need to sum probabilities.
+    if rank + 1 == len(ranks):
+        topk = probs.topk(k)
+        return OrderedDict(
+            [format_name(*txt_names[i]), prob] for i, prob in zip(topk.indices, topk.values)
+        )
+    else:
+        return OrderedDict
