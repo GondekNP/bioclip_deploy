@@ -6,9 +6,7 @@ import numpy as np
 import json
 from torchvision import transforms
 import torch.nn.functional as F
-import collections
 from collections import OrderedDict
-import heapq
 import fastapi
 from pydantic import BaseModel
 
@@ -78,4 +76,4 @@ def classify_image(remote_image: RemoteImage):
             [format_name(*txt_names[i]), prob] for i, prob in zip(topk.indices, topk.values)
         )
     else:
-        return OrderedDict
+        return OrderedDict()
